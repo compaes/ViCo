@@ -24,7 +24,7 @@ If you use the source code, please make sure to reference both the
 package and the paper:
 
 > Vila-Vidal, M. (2022). VisualContour v1.0,
-https://github.com/compaes/VisualContour. Zenodo. (DOI)
+https://github.com/mvilavidal/Visual-Contour. Zenodo. (DOI)
 
 > REFERENCE PAPER
 """
