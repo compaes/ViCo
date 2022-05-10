@@ -24,13 +24,14 @@ If you use the source code, please make sure to reference both the
 package and the paper:
 
 > Vila-Vidal, M. (2022). VisualContour v1.0,
-https://github.com/mvilavidal/Visual-Contour. Zenodo. (DOI)
+https://github.com/compaes/Visual-Contour. Zenodo. (DOI)
 
 > REFERENCE PAPER
 """
 
 
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(style='white',color_codes=True,font_scale=2)
@@ -65,19 +66,22 @@ def cardinalCubicHermiteSpline(s,x,sinterp,t=0,ends=False):
 def handler(change):
     Randomize.value=False
 
-def contourgeneratorinteractive(R,N,d,t):
+def contourgeneratorinteractive(R,v,d,t):
 
+    N=int(v/2)
+    D=d*1.3
+    
     global RAN
     if R: RAN=np.random.randn(3*Nmax)
     Randomize.observe(handler,'value')
     
     # point radius tolerance, points are placed at the ring ± a radius tolerance following a normal with std=er:
-    er=0.2*d 
+    er=0.2*D 
     # point angle tolerance, points are uniformly distributed along the circle ± an angle tolerance following a normal with std=ea:
     ea=0.2*2*np.pi/float(N) 
 
     # outer ring
-    ro=(1.5+d/2.)+er*RAN[:N] # outer radiuses
+    ro=(1.5+D/2.)+er*RAN[:N] # outer radiuses
     #ao=2*np.pi*np.random.rand()+np.linspace(0,2*np.pi*(N-1)/float(N),N)+ea*np.random.randn(N)
     ao=np.linspace(0,2*np.pi*(N-1)/float(N),N)+ea*RAN[N:2*N] # outer angles
     ao.sort()
@@ -127,10 +131,136 @@ def contourgeneratorinteractive(R,N,d,t):
 
 
     
-Nmax=20
+Nmax=30
 RAN=np.random.randn(3*Nmax)
 Randomize=widgets.ToggleButton(value=False,description='Randomize structure')
-Nw=widgets.IntSlider(min=5,max=Nmax,step=1,value=10,description='Vertices',continuous_update=False)
-dw=widgets.FloatSlider(min=0,max=1,step=0.01,value=0.5,description='Distance',continuous_update=False)
-tw=widgets.FloatSlider(min=0,max=1,step=0.01,value=0.5,description='Tension',continuous_update=False)
-widget=interactive(contourgeneratorinteractive,R=Randomize,N=Nw,d=dw,t=tw);
+vw=widgets.IntSlider(min=10,max=Nmax,step=2,value=10,description='Vertices',continuous_update=False)
+dw=widgets.FloatSlider(min=0,max=1,step=0.1,value=0.5,description='Distance',continuous_update=False,readout_format='.1f')
+tw=widgets.FloatSlider(min=0.1,max=1,step=0.1,value=0.5,description='Tension',continuous_update=False,readout_format='.1f')
+widget=interactive(contourgeneratorinteractive,R=Randomize,v=vw,d=dw,t=tw);
+
+
+
+
+
+### GENERATOR
+
+
+
+
+box_layout = widgets.Layout(display='flex',
+                            flex_flow='row',
+                            width='80%',
+                           #border='solid',
+                           flex_wrap='wrap')
+datavertices = [str(v) for v in np.arange(10,31,2)]
+datadistances = [str(round(v,1)) for v in np.arange(0,1.1,0.1)]
+datatensions = [str(round(v,1)) for v in np.arange(0,1.1,0.1)]
+firstlabel=widgets.Label('Vertices (v): ')
+first = widgets.Box(children=[widgets.Checkbox(value=False, description=label, indent=False, layout=widgets.Layout(flex='auto', justify_content='flex-start')) for label in datavertices], layout=box_layout)
+secondlabel=widgets.Label('Distance (d): ')
+second = widgets.Box(children=[widgets.Checkbox(value=False, description=label, indent=False, layout=widgets.Layout(flex='auto', justify_content='flex-start')) for label in datadistances], layout=box_layout)
+thirdlabel=widgets.Label('Tension (t): ')
+third = widgets.Box(children=[widgets.Checkbox(value=False, description=label, indent=False, layout=widgets.Layout(flex='auto', justify_content='flex-start')) for label in datatensions], layout=box_layout)
+generatebutton = widgets.Button(
+    description='Generate set',
+    disabled=False,
+    button_style='', # 'success', 'info', 'warning', 'danger' or ''
+    tooltip='Click me',
+    icon='check' # (FontAwesome names without the `fa-` prefix)
+)
+
+
+v_all=np.array([int(v) for v in datavertices])
+d_all=np.array([float(v) for v in datadistances])
+t_all=np.array([float(v) for v in datatensions])
+
+def generateset(b):
+    
+    k=1
+    while os.path.exists('stimulus_set_output'+str(k)):
+        k+=1
+    outputdir='stimulus_set_output'+str(k)
+    os.mkdir(outputdir)
+    
+    v_sel=v_all[[el.value for el in first.children]]
+    d_sel=d_all[[el.value for el in second.children]]
+    t_sel=t_all[[el.value for el in third.children]]
+
+    for v in v_sel:
+    
+        N=int(v/2)
+        RAN=np.random.randn(3*N)
+        
+        for d in d_sel:
+            
+            D=d*1.3
+
+            # point radius tolerance, points are placed at the ring ± a radius tolerance following a normal with std=er:
+            er=0.2*D 
+            # point angle tolerance, points are uniformly distributed along the circle ± an angle tolerance following a normal with std=ea:
+            ea=0.2*2*np.pi/float(N) 
+
+            # outer ring
+            ro=(1.5+D/2.)+er*RAN[:N] # outer radiuses
+            #ao=2*np.pi*np.random.rand()+np.linspace(0,2*np.pi*(N-1)/float(N),N)+ea*np.random.randn(N)
+            ao=np.linspace(0,2*np.pi*(N-1)/float(N),N)+ea*RAN[N:2*N] # outer angles
+            ao.sort()
+            xo=ro*np.cos(ao)
+            yo=ro*np.sin(ao)
+
+            # inner ring
+            ri=(1.5-d/2)+er*RAN[2*N:3*N] # inner radiuses
+            aux=np.array(list(ao[1:])+[ao[0]+2*np.pi])
+            ai=(aux+ao)/2 # inner angles = each point is placed between two outer points
+            xi=ri*np.cos(ai)
+            yi=ri*np.sin(ai)
+
+            X=[]
+            Y=[]
+            for i in range(N):
+                X+=[xo[i], xi[i]]
+                Y+=[yo[i], yi[i]]
+
+            X=X+X[:3] # duplicate first points at the end to ensure correct interpolation at the edges
+            Y=Y+Y[:3] # duplicate first points at the end to ensure correct interpolation at the edges
+
+            X=np.array(X)
+            Y=np.array(Y)
+
+            F=np.vstack((X,Y))
+            s=np.arange(F.shape[1]) # parametrisation of the curve F
+            F=np.transpose(F)
+            
+            for t in t_sel:
+
+                Fn=cardinalCubicHermiteSpline(s,F,np.linspace(0,s.max(),10000),t=t,ends=False)
+
+                fig=plt.figure()
+                plt.plot(Fn[:,0],Fn[:,1],'k')
+                plt.xlim((-3,3))
+                plt.ylim((-3,3))
+                plt.xticks([])
+                plt.yticks([])            
+                ax=plt.gca()
+                ax.set_position([0.1,0.1,0.8,0.8])
+                ax.spines['right'].set_linewidth(0)
+                ax.spines['left'].set_linewidth(0)
+                ax.spines['top'].set_linewidth(0)
+                ax.spines['bottom'].set_linewidth(0)
+                fig.set_figheight(6)
+                fig.set_figwidth(6)
+                fig.savefig(outputdir+'/stimulus_v'+str(v)+'_d{:0>2.0f}_t{:0>2.0f}'.format(10*d,10*t)+'.png',dpi=200)
+                plt.close()
+    
+    print('Done')
+    
+generatebutton.on_click(generateset)
+
+generator=widgets.VBox([firstlabel,first,secondlabel,second,thirdlabel,third,generatebutton])
+
+
+
+
+    
+      
