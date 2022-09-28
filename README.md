@@ -15,6 +15,7 @@ If you use the source code or the XXX Set, please make sure to reference the pap
 ## License
 
 Copyright (C) 2022, Manel Vila-Vidal, Ana Clemente
+
 Contact details: m@vila-vidal.com / manel.vila-vidal@upf.edu
 
 This program is free software; you can redistribute it and/or modify it
